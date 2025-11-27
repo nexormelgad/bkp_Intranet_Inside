@@ -283,29 +283,52 @@ if [ $RESTORE_DB -eq 1 ]; then
             db_name=$(basename "$sql_file" .sql.gz)
             log_message "INFO" "Restauration de la base: $db_name"
 
-            # Vérifier si la base existe, sinon la créer
+            # Vérifier si la base existe
             DB_EXISTS=$($MYSQL --defaults-file="$MYSQL_CNF" -N -e "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME='$db_name';" 2>/dev/null)
 
-            if [ -z "$DB_EXISTS" ]; then
-                log_message "INFO" "La base $db_name n'existe pas, création..."
-                $MYSQL --defaults-file="$MYSQL_CNF" -e "CREATE DATABASE IF NOT EXISTS \`$db_name\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>&1 | tee -a "$RESTORE_LOG"
+            if [ -n "$DB_EXISTS" ]; then
+                log_message "INFO" "La base $db_name existe déjà, suppression pour restauration complète..."
+                $MYSQL --defaults-file="$MYSQL_CNF" -e "DROP DATABASE IF EXISTS \`$db_name\`;" 2>&1 >> "$RESTORE_LOG"
 
                 if [ $? -ne 0 ]; then
-                    log_message "ERREUR" "Impossible de créer la base: $db_name"
+                    log_message "ERREUR" "Impossible de supprimer la base: $db_name"
                     DATABASES_FAILED=$((DATABASES_FAILED + 1))
                     TOTAL_ERRORS=$((TOTAL_ERRORS + 1))
                     continue
                 fi
             fi
 
-            # Restaurer la base
-            $GUNZIP -c "$sql_file" | $MYSQL --defaults-file="$MYSQL_CNF" "$db_name" 2>&1 | tee -a "$RESTORE_LOG"
+            # Créer la base
+            log_message "INFO" "Création de la base $db_name..."
+            $MYSQL --defaults-file="$MYSQL_CNF" -e "CREATE DATABASE \`$db_name\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>&1 >> "$RESTORE_LOG"
 
-            if [ ${PIPESTATUS[0]} -eq 0 ] && [ ${PIPESTATUS[1]} -eq 0 ]; then
+            if [ $? -ne 0 ]; then
+                log_message "ERREUR" "Impossible de créer la base: $db_name"
+                DATABASES_FAILED=$((DATABASES_FAILED + 1))
+                TOTAL_ERRORS=$((TOTAL_ERRORS + 1))
+                continue
+            fi
+
+            # Restaurer la base (décompression + import)
+            log_message "INFO" "Import des données dans $db_name..."
+
+            # Créer un fichier temporaire pour capturer les erreurs
+            TEMP_ERROR_FILE=$(mktemp)
+
+            $GUNZIP -c "$sql_file" | $MYSQL --defaults-file="$MYSQL_CNF" "$db_name" 2>"$TEMP_ERROR_FILE"
+            RESTORE_STATUS=$?
+
+            # Afficher les erreurs s'il y en a
+            if [ -s "$TEMP_ERROR_FILE" ]; then
+                cat "$TEMP_ERROR_FILE" >> "$RESTORE_LOG"
+            fi
+            rm -f "$TEMP_ERROR_FILE"
+
+            if [ $RESTORE_STATUS -eq 0 ]; then
                 log_message "OK" "Base $db_name restaurée avec succès"
                 DATABASES_RESTORED=$((DATABASES_RESTORED + 1))
             else
-                log_message "ERREUR" "Échec de la restauration de la base: $db_name"
+                log_message "ERREUR" "Échec de la restauration de la base: $db_name (code: $RESTORE_STATUS)"
                 DATABASES_FAILED=$((DATABASES_FAILED + 1))
                 TOTAL_ERRORS=$((TOTAL_ERRORS + 1))
             fi
