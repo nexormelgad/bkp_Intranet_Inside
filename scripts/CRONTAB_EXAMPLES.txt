@@ -1,0 +1,105 @@
+################################################################################
+# EXEMPLES DE CONFIGURATION CRONTAB
+#
+# Pour éditer la crontab : crontab -e
+# Pour lister la crontab : crontab -l
+################################################################################
+
+# ============================================================================
+# OPTION 1 : Sauvegardes 3 fois par jour (RECOMMANDÉ)
+# ============================================================================
+# À 02h00, 12h00 et 18h00 tous les jours
+0 2 * * * /mnt/backup/scripts/backup_intranet.sh >/dev/null 2>&1
+0 12 * * * /mnt/backup/scripts/backup_intranet.sh >/dev/null 2>&1
+0 18 * * * /mnt/backup/scripts/backup_intranet.sh >/dev/null 2>&1
+
+# ============================================================================
+# OPTION 2 : Sauvegardes toutes les 6 heures
+# ============================================================================
+# À 00h00, 06h00, 12h00 et 18h00
+0 */6 * * * /mnt/backup/scripts/backup_intranet.sh >/dev/null 2>&1
+
+# ============================================================================
+# OPTION 3 : Sauvegarde quotidienne
+# ============================================================================
+# Une fois par jour à 03h00 du matin
+0 3 * * * /mnt/backup/scripts/backup_intranet.sh >/dev/null 2>&1
+
+# ============================================================================
+# OPTION 4 : Sauvegardes toutes les 4 heures
+# ============================================================================
+# À 00h00, 04h00, 08h00, 12h00, 16h00, 20h00
+0 */4 * * * /mnt/backup/scripts/backup_intranet.sh >/dev/null 2>&1
+
+# ============================================================================
+# OPTION 5 : Sauvegardes 4 fois par jour (heures de travail)
+# ============================================================================
+# À 08h00, 12h00, 16h00 et 23h00
+0 8,12,16,23 * * * /mnt/backup/scripts/backup_intranet.sh >/dev/null 2>&1
+
+# ============================================================================
+# OPTION 6 : Sauvegardes en semaine uniquement
+# ============================================================================
+# Du lundi au vendredi à 08h00, 14h00 et 20h00
+0 8,14,20 * * 1-5 /mnt/backup/scripts/backup_intranet.sh >/dev/null 2>&1
+
+# ============================================================================
+# OPTION 7 : Avec notification par email en cas d'erreur
+# ============================================================================
+# Nécessite un serveur mail configuré (postfix, sendmail, etc.)
+MAILTO=admin@example.com
+0 2,12,18 * * * /mnt/backup/scripts/backup_intranet.sh
+
+# ============================================================================
+# OPTION 8 : Sauvegarde avec log séparé
+# ============================================================================
+# Enregistrer la sortie dans un fichier de log global
+0 3 * * * /mnt/backup/scripts/backup_intranet.sh >> /var/log/backup_cron.log 2>&1
+
+# ============================================================================
+# FORMAT DE CRONTAB
+# ============================================================================
+#
+# * * * * * commande
+# │ │ │ │ │
+# │ │ │ │ └─── Jour de la semaine (0-7, 0 et 7 = dimanche)
+# │ │ │ └───── Mois (1-12)
+# │ │ └─────── Jour du mois (1-31)
+# │ └───────── Heure (0-23)
+# └─────────── Minute (0-59)
+#
+# Exemples :
+# 0 2 * * *     = Tous les jours à 02h00
+# 0 */6 * * *   = Toutes les 6 heures
+# 0 0 * * 0     = Tous les dimanches à minuit
+# 0 3 1 * *     = Le 1er de chaque mois à 03h00
+# 0 0 1 1 *     = Le 1er janvier à minuit
+# */15 * * * *  = Toutes les 15 minutes
+# 0 9-17 * * 1-5 = Toutes les heures de 9h à 17h, du lundi au vendredi
+#
+################################################################################
+
+# ============================================================================
+# COMMANDES UTILES POUR CRON
+# ============================================================================
+
+# Éditer la crontab
+# crontab -e
+
+# Lister la crontab actuelle
+# crontab -l
+
+# Supprimer la crontab
+# crontab -r
+
+# Vérifier les logs de cron
+# grep CRON /var/log/syslog
+# journalctl -u cron
+
+# Vérifier que le service cron est actif
+# systemctl status cron
+
+# Redémarrer le service cron
+# systemctl restart cron
+
+################################################################################
