@@ -1,5 +1,35 @@
 # Changelog - Scripts de Sauvegarde VPS
 
+## Version 1.2 - 2025-11-28
+
+### 🔐 Amélioration Sécurité - Séparation des Utilisateurs MySQL
+
+**Problème identifié :**
+- L'utilisateur `backupuser` n'a que des droits de lecture
+- La restauration nécessite des droits CREATE/DROP DATABASE
+- Erreur : "Access denied for user 'backupuser'@'localhost' to database"
+
+**Solution implémentée :**
+- ✅ Création d'un utilisateur séparé pour la restauration (`restoreuser`)
+- ✅ Principe du moindre privilège : backupuser (lecture) / restoreuser (tous droits)
+- ✅ Deux fichiers de config : `/root/.my.cnf` et `/root/.my_restore.cnf`
+
+**Modifications apportées :**
+
+1. **Script `restore.sh`**
+   - Utilise maintenant `/root/.my_restore.cnf` au lieu de `/root/.my.cnf`
+   - Commentaires explicites sur les droits nécessaires
+
+2. **Nouvelle documentation**
+   - `MYSQL_CONFIG.md` : Guide complet de configuration MySQL
+   - Instructions pas à pas pour créer les deux utilisateurs
+   - Tests de validation
+   - Guide de dépannage
+
+**Impact :** MOYEN - Configuration MySQL supplémentaire requise
+
+---
+
 ## Version 1.1 - 2025-11-27
 
 ### 🐛 Correction Critique - Script de Restauration

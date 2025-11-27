@@ -8,29 +8,45 @@
 ls -lh /mnt/backup/scripts/
 ```
 
-### 2. Créer l'utilisateur MySQL de sauvegarde
+### 2. Créer les utilisateurs MySQL
 
 ```bash
 mysql -u root -p
 ```
 
 ```sql
-CREATE USER 'backupuser'@'localhost' IDENTIFIED BY 'VotreMotDePasseSecurise';
+-- Utilisateur de sauvegarde (lecture seule)
+CREATE USER 'backupuser'@'localhost' IDENTIFIED BY 'MotDePasseSauvegarde';
 GRANT SELECT, LOCK TABLES, SHOW VIEW, EVENT, TRIGGER ON *.* TO 'backupuser'@'localhost';
+
+-- Utilisateur de restauration (tous droits)
+CREATE USER 'restoreuser'@'localhost' IDENTIFIED BY 'MotDePasseRestauration';
+GRANT ALL PRIVILEGES ON *.* TO 'restoreuser'@'localhost';
+
 FLUSH PRIVILEGES;
 EXIT;
 ```
 
-### 3. Créer le fichier de configuration MySQL
+### 3. Créer les fichiers de configuration MySQL
 
 ```bash
+# Fichier pour la sauvegarde
 cat > /root/.my.cnf << 'EOF'
 [client]
 user=backupuser
-password=VotreMotDePasseSecurise
+password=MotDePasseSauvegarde
 EOF
 
 chmod 600 /root/.my.cnf
+
+# Fichier pour la restauration
+cat > /root/.my_restore.cnf << 'EOF'
+[client]
+user=restoreuser
+password=MotDePasseRestauration
+EOF
+
+chmod 600 /root/.my_restore.cnf
 ```
 
 ### 4. Tester la sauvegarde
@@ -120,7 +136,7 @@ find /mnt/backup -mindepth 1 -maxdepth 1 -type d -mtime +30 -exec rm -rf {} \;
 
 ## 🆘 Dépannage Rapide
 
-### Erreur de connexion MySQL ?
+### Erreur de connexion MySQL (sauvegarde) ?
 
 ```bash
 # Vérifier le fichier de config
@@ -130,10 +146,24 @@ cat /root/.my.cnf
 mysql --defaults-file=/root/.my.cnf -e "SHOW DATABASES;"
 ```
 
+### Erreur "Access denied" lors de la restauration ?
+
+```bash
+# Vérifier le fichier de config de restauration
+cat /root/.my_restore.cnf
+
+# Tester la connexion avec restoreuser
+mysql --defaults-file=/root/.my_restore.cnf -e "SHOW DATABASES;"
+
+# Vérifier les droits
+mysql -u root -p -e "SHOW GRANTS FOR 'restoreuser'@'localhost';"
+```
+
 ### Permissions incorrectes ?
 
 ```bash
 chmod 600 /root/.my.cnf
+chmod 600 /root/.my_restore.cnf
 chmod +x /mnt/backup/scripts/*.sh
 ```
 
@@ -141,6 +171,7 @@ chmod +x /mnt/backup/scripts/*.sh
 
 ```bash
 grep -i "erreur" /mnt/backup/2025*/backup.log
+grep -i "erreur" /mnt/backup/2025*/restore_*.log
 ```
 
 ---

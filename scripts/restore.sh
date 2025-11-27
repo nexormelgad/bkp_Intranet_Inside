@@ -34,8 +34,11 @@ set -o pipefail
 # Répertoire du site web (destination de la restauration)
 WEB_ROOT="/var/www/intranet-inside"
 
-# Fichier de configuration MySQL
-MYSQL_CNF="/root/.my.cnf"
+# Fichier de configuration MySQL pour la restauration
+# Note: La restauration nécessite des droits CREATE/DROP DATABASE
+# Utilisez /root/.my_restore.cnf avec un utilisateur ayant tous les droits
+# ou /root/.my.cnf si l'utilisateur a les droits nécessaires
+MYSQL_CNF="/root/.my_restore.cnf"
 
 #==============================================================================
 # VARIABLES INTERNES
